@@ -10,9 +10,13 @@ import logging
 from prometheus_client import start_http_server, Gauge
 import yaml
 
-
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='{ "date_time": "%(asctime)s", "loglevel": "%(levelname)s", "message": %(message)s}', handlers=[logging.StreamHandler()])
+logging.basicConfig(
+    level=logging.INFO, 
+    format='{ "date_time": "%(asctime)s", "loglevel": "%(levelname)s", "message": %(message)s}', 
+    handlers=[logging.StreamHandler()]
+)
+
 logger = logging.getLogger()
 
 # Generate example config file
@@ -46,31 +50,66 @@ def load_config(file_path):
 def scan_ports(host, ports, protocol, logging, timeout):
     open_ports = []
     for port in ports:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM if protocol == 'tcp' else socket.SOCK_DGRAM)
+        sock = socket.socket(
+            socket.AF_INET, 
+            socket.SOCK_STREAM if protocol == 'tcp' else socket.SOCK_DGRAM
+        )
         sock.settimeout(timeout)
         try:
             result = sock.connect_ex((host, port))
             if logging:
-                logger.info(json.dumps({"host": host, "port": port, "protocol": protocol, "status": "open"}))
+                logger.info(
+                    json.dumps({
+                        "host": host, 
+                        "port": port, 
+                        "protocol": protocol, 
+                        "status": "open"
+                    })
+                )
             if result == 0:
                 open_ports.append(port)
         except Exception:
             if logging:
-                logger.info(json.dumps({"host": host, "port": port, "protocol": protocol, "status": "closed or host unknown"}))
+                logger.info(
+                    json.dumps({
+                        "host": host, 
+                        "port": port, 
+                        "protocol": protocol, 
+                        "status": "closed or host unknown"
+                    })
+                )
         sock.close()
     return open_ports
 
 # Main function
 def main():
     parser = argparse.ArgumentParser(description='Simple port scanner.')
-    parser.add_argument("command", choices=['run', 'generate'], help="run - run command, generate - generate and override config.yaml file")
-    parser.add_argument("--port", type=int, required=False, help="Change default (tcp/8000) http port.")
-    parser.add_argument("--config", type=str, required=False, help="Change default config file path. File in yaml format")
-    parser.add_argument("--node", type=str, required=False, help="Hostname from generated node, support ENV.NODE too. If not defined use hostname")
+    parser.add_argument(
+        "command", 
+        choices=['run', 'generate'], 
+        help="run - run command, generate - generate and override config.yaml file"
+    )
+    parser.add_argument(
+        "--port", 
+        type=int, 
+        required=False, 
+        help="Change default (tcp/8000) http port."
+    )
+    parser.add_argument(
+        "--config", 
+        type=str, 
+        required=False, 
+        help="Change default config file path. File in yaml format"
+    )
+    parser.add_argument(
+        "--node", 
+        type=str, 
+        required=False, 
+        help="Hostname from generated node, support ENV.NODE too. If not defined use hostname"
+    )
 
     args = parser.parse_args()
 
- 
     host_from = os.environ.get('NODE', socket.gethostname())
     http_port = args.port if args.port else 8000
     config_file = args.config if args.config else "config.yaml"
@@ -92,13 +131,34 @@ def main():
     
     gauges = {}
     
-    gauges[host_from] = Gauge('portscan', 'Open ports for host', ['source_host', 'remote_host','port', 'protocol'])
+    gauges[host_from] = Gauge(
+        'portscan', 
+        'Open ports for host', 
+        [
+            'source_host', 
+            'remote_host',
+            'port', 
+            'protocol'
+        ]
+    )
     
     while True:
         for host in config['hosts']:
-            open_ports = scan_ports(host['host'], host['ports'], host['protocol'], config['logging'], config['timeout'])
+            open_ports = scan_ports(
+                host['host'], 
+                host['ports'], 
+                host['protocol'], 
+                config['logging'], 
+                config['timeout']
+            )
+            
             for port in open_ports:
-                gauges[host_from].labels(source_host=host_from, remote_host=host['host'], port=port, protocol=host['protocol']).set(1)
+                gauges[host_from].labels(
+                    source_host=host_from, 
+                    remote_host=host['host'], 
+                    port=port, 
+                    protocol=host['protocol']
+                ).set(1)
             time.sleep(host['check_interval'])
 
 if __name__ == "__main__":
