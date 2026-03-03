@@ -12,8 +12,8 @@ import yaml
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, 
-    format='{ "date_time": "%(asctime)s", "loglevel": "%(levelname)s", "message": %(message)s}', 
+    level=logging.INFO,
+    format='{ "date_time": "%(asctime)s", "loglevel": "%(levelname)s", "message": %(message)s}',
     handlers=[logging.StreamHandler()]
 )
 
@@ -39,7 +39,7 @@ hosts:
     check_interval: 20
     """
     with open('config.yaml', 'w') as file:
-        file.write(data)    
+        file.write(data)
 
 # Load configuration from YAML file
 def load_config(file_path):
@@ -51,7 +51,7 @@ def scan_ports(host, ports, protocol, logging, timeout):
     open_ports = []
     for port in ports:
         sock = socket.socket(
-            socket.AF_INET, 
+            socket.AF_INET,
             socket.SOCK_STREAM if protocol == 'tcp' else socket.SOCK_DGRAM
         )
         sock.settimeout(timeout)
@@ -86,25 +86,25 @@ def main():
     parser = argparse.ArgumentParser(description='Simple port scanner.')
     parser.add_argument(
         "command", 
-        choices=['run', 'generate'], 
+        choices=['run', 'generate'],
         help="run - run command, generate - generate and override config.yaml file"
     )
     parser.add_argument(
-        "--port", 
-        type=int, 
-        required=False, 
+        "--port",
+        type=int,
+        required=False,
         help="Change default (tcp/8000) http port."
     )
     parser.add_argument(
-        "--config", 
-        type=str, 
-        required=False, 
+        "--config",
+        type=str,
+        required=False,
         help="Change default config file path. File in yaml format"
     )
     parser.add_argument(
-        "--node", 
-        type=str, 
-        required=False, 
+        "--node",
+        type=str,
+        required=False,
         help="Hostname from generated node, support ENV.NODE too. If not defined use hostname"
     )
 
@@ -141,22 +141,22 @@ def main():
             'protocol'
         ]
     )
-    
+
     while True:
         for host in config['hosts']:
             open_ports = scan_ports(
-                host['host'], 
-                host['ports'], 
-                host['protocol'], 
-                config['logging'], 
+                host['host'],
+                host['ports'],
+                host['protocol'],
+                config['logging'],
                 config['timeout']
             )
             
             for port in open_ports:
                 gauges[host_from].labels(
                     source_host=host_from, 
-                    remote_host=host['host'], 
-                    port=port, 
+                    remote_host=host['host'],
+                    port=port,
                     protocol=host['protocol']
                 ).set(1)
             time.sleep(host['check_interval'])
