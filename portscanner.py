@@ -3,12 +3,13 @@
 import argparse
 import socket
 import time
-import yaml
 import os
 import sys
 import json
 import logging
 from prometheus_client import start_http_server, Gauge
+import yaml
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='{ "date_time": "%(asctime)s", "loglevel": "%(levelname)s", "message": %(message)s}', handlers=[logging.StreamHandler()])
