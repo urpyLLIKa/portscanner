@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import socket
 import time
 import yaml
@@ -7,7 +8,6 @@ import os
 import sys
 import json
 import logging
-import argparse
 from prometheus_client import start_http_server, Gauge
 
 # Set up logging
