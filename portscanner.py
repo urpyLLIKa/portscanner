@@ -4,6 +4,7 @@ import socket
 import time
 import yaml
 import os
+import sys
 import json
 import logging
 import argparse
@@ -86,9 +87,9 @@ def main():
     elif args.command == "generate":
         logger.info('"Generate config in config.yaml file"')
         generate_config()
-        exit(0)
+        sys.exit()
     else:
-        exit(0)
+        sys.exit()
     
     config = load_config(config_file)
     start_http_server(http_port)
