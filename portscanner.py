@@ -10,7 +10,6 @@ import logging
 from prometheus_client import start_http_server, Gauge
 import yaml
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format='{ "date_time": "%(asctime)s", "loglevel": "%(levelname)s", "message": %(message)s}',
@@ -19,8 +18,8 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
-# Generate example config file
 def generate_config():
+    """Generate example config file"""
     data = """#Simple configuration
 logging: true
 timeout: 1
@@ -38,16 +37,16 @@ hosts:
     protocol: "udp"
     check_interval: 20
     """
-    with open('config.yaml', 'w') as file:
+    with open('config.yaml', 'w', encoding="utf-8") as file:
         file.write(data)
 
-# Load configuration from YAML file
 def load_config(file_path):
-    with open(file_path, 'r') as file:
+    """ Load configuration from YAML file"""
+    with open(file_path, 'r',encoding="utf-8") as file:
         return yaml.safe_load(file)
 
-# Function to scan ports
-def scan_ports(host, ports, protocol, logging, timeout):
+def scan_ports(host, ports, protocol, log_enable, timeout):
+    """ Function to scan ports"""
     open_ports = []
     for port in ports:
         sock = socket.socket(
@@ -57,7 +56,7 @@ def scan_ports(host, ports, protocol, logging, timeout):
         sock.settimeout(timeout)
         try:
             result = sock.connect_ex((host, port))
-            if logging:
+            if log_enable:
                 logger.info(
                     json.dumps({
                         "host": host, 
@@ -69,7 +68,7 @@ def scan_ports(host, ports, protocol, logging, timeout):
             if result == 0:
                 open_ports.append(port)
         except Exception:
-            if logging:
+            if log_enable:
                 logger.info(
                     json.dumps({
                         "host": host, 
@@ -81,8 +80,8 @@ def scan_ports(host, ports, protocol, logging, timeout):
         sock.close()
     return open_ports
 
-# Main function
 def main():
+    """ Main function """
     parser = argparse.ArgumentParser(description='Simple port scanner.')
     parser.add_argument(
         "command", 
@@ -113,24 +112,20 @@ def main():
     host_from = os.environ.get('NODE', socket.gethostname())
     http_port = args.port if args.port else 8000
     config_file = args.config if args.config else "config.yaml"
-    
+
     if args.node:
         host_from = args.node
-    
     if args.command == "run":
-        logger.info(f'"Run service on port {http_port}"')
+        logger.info('"Run service on port %s"',http_port)
     elif args.command == "generate":
         logger.info('"Generate config in config.yaml file"')
         generate_config()
         sys.exit()
     else:
         sys.exit("Invalid command. Use 'run' or 'generate'.")
-    
     config = load_config(config_file)
     start_http_server(http_port)
-    
     gauges = {}
-    
     gauges[host_from] = Gauge(
         'portscan', 
         'Open ports for host', 
@@ -151,10 +146,10 @@ def main():
                 config['logging'],
                 config['timeout']
             )
-            
+
             for port in open_ports:
                 gauges[host_from].labels(
-                    source_host=host_from, 
+                    source_host=host_from,
                     remote_host=host['host'],
                     port=port,
                     protocol=host['protocol']
