@@ -17,7 +17,8 @@ logger = logging.getLogger()
 # Generate example config file
 def generate_config():
     data = """#Simple configuration
-logging: enable
+logging: true
+timeout: 1
 hosts:
   - host: "localhost"
     ports: [80, 443, 22, 28882]
@@ -41,21 +42,20 @@ def load_config(file_path):
         return yaml.safe_load(file)
 
 # Function to scan ports
-def scan_ports(host, ports, protocol, logging):
+def scan_ports(host, ports, protocol, logging, timeout):
     open_ports = []
     for port in ports:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM if protocol == 'tcp' else socket.SOCK_DGRAM)
-        sock.settimeout(1)
+        sock.settimeout(timeout)
         try:
-          result = sock.connect_ex((host, port))
-          if logging == 'enable':
-            logger.info(json.dumps({"host": host, "port": port, "protocol": protocol, "status": "open"}))
+            result = sock.connect_ex((host, port))
+            if logging:
+                logger.info(json.dumps({"host": host, "port": port, "protocol": protocol, "status": "open"}))
+            if result == 0:
+                open_ports.append(port)
         except Exception:
-          result = 1
-          if logging == 'enable':
-            logger.info(json.dumps({"host": host, "port": port, "protocol": protocol, "status": "closed or host unknown"}))
-        if result == 0:
-            open_ports.append(port)
+            if logging:
+                logger.info(json.dumps({"host": host, "port": port, "protocol": protocol, "status": "closed or host unknown"}))
         sock.close()
     return open_ports
 
@@ -69,15 +69,10 @@ def main():
 
     args = parser.parse_args()
 
+ 
     host_from = os.environ.get('NODE', socket.gethostname())
-    http_port = 8000
-    config_file="config.yaml"
-    
-    if args.port:
-        http_port= args.port
-     
-    if args.config:
-        config_file= args.config
+    http_port = args.port if args.port else 8000
+    config_file = args.config if args.config else "config.yaml"
     
     if args.node:
         host_from = args.node
@@ -89,7 +84,7 @@ def main():
         generate_config()
         sys.exit()
     else:
-        sys.exit()
+        sys.exit("Invalid command. Use 'run' or 'generate'.")
     
     config = load_config(config_file)
     start_http_server(http_port)
@@ -100,7 +95,7 @@ def main():
     
     while True:
         for host in config['hosts']:
-            open_ports = scan_ports(host['host'], host['ports'], host['protocol'], config['logging'])
+            open_ports = scan_ports(host['host'], host['ports'], host['protocol'], config['logging'], config['timeout'])
             for port in open_ports:
                 gauges[host_from].labels(source_host=host_from, remote_host=host['host'], port=port, protocol=host['protocol']).set(1)
             time.sleep(host['check_interval'])
