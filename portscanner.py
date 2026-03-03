@@ -62,10 +62,10 @@ def scan_ports(host, ports, protocol, logging, timeout):
 # Main function
 def main():
     parser = argparse.ArgumentParser(description='Simple port scanner.')
-    parser.add_argument("command", help="run - run command, generate - generate and override config.yaml file")
-    parser.add_argument("--port", action="store_true", help="Change default (tcp/8000) http port.")
-    parser.add_argument("--config", action="store_true", help="Change default config file path. File in yaml format")
-    parser.add_argument("--node", action="store_true", help="Hostname from generated node, support ENV.NODE too. If not defined use hostname")
+    parser.add_argument("command", choices=['run', 'generate'], help="run - run command, generate - generate and override config.yaml file")
+    parser.add_argument("--port", type=int, required=False, help="Change default (tcp/8000) http port.")
+    parser.add_argument("--config", type=str, required=False, help="Change default config file path. File in yaml format")
+    parser.add_argument("--node", type=str, required=False, help="Hostname from generated node, support ENV.NODE too. If not defined use hostname")
 
     args = parser.parse_args()
 
@@ -78,7 +78,7 @@ def main():
         host_from = args.node
     
     if args.command == "run":
-        logger.info('"Run service"')
+        logger.info(f'"Run service on port {http_port}"')
     elif args.command == "generate":
         logger.info('"Generate config in config.yaml file"')
         generate_config()
